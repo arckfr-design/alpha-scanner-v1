@@ -45,6 +45,38 @@ try:
     alpha_moy = df['Alpha'].mean()
     win_rate = (df['Alpha'] > 0).mean() * 100
 
+    # --- AJOUTER APRÈS LA SECTION KPI ---
+
+# Barre latérale pour la navigation
+menu = st.sidebar.selectbox("Navigation", ["🔍 Scanner Global", "💰 Mon Portefeuille"])
+
+if menu == "💰 Mon Portefeuille":
+    st.header("Mes Positions Actuelles")
+    
+    # On filtre les actions où la colonne 'Portfolio' est 'OUI'
+    if 'Portfolio' in df.columns:
+        my_stocks = df[df['Portfolio'].str.upper() == "OUI"]
+        
+        if not my_stocks.empty:
+            # On affiche la performance moyenne de TON portefeuille
+            perf_port = my_stocks['Alpha'].mean() * 100
+            st.metric("Alpha de mon Portefeuille", f"{perf_port:.2f}%")
+            
+            st.dataframe(my_stocks[['Date', 'Ticker', 'Grade', 'Alpha', 'Prix Actuel']])
+            
+            # Graphique spécifique à tes actions
+            fig_port = px.bar(my_stocks, x='Ticker', y='Alpha', color='Alpha', 
+                              title="Performance individuelle de mes lignes")
+            st.plotly_chart(fig_port)
+        else:
+            st.info("Ajoute 'OUI' dans la colonne 'Portfolio' de ton Sheets pour voir tes actions ici.")
+    else:
+        st.warning("Ajoute une colonne 'Portfolio' dans ton Google Sheets.")
+
+else:
+    # --- METTRE ICI TOUT TON CODE DE SCANNER ACTUEL ---
+    st.write("Contenu du scanner global...")
+
     col1, col2, col3 = st.columns(3)
     col1.metric("Alpha Moyen par Signal", f"{alpha_moy:.4f}", delta="Performance vs Marché")
     col2.metric("Taux de Succès", f"{win_rate:.1f}%")
