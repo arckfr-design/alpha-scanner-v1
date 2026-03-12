@@ -9,7 +9,7 @@ st.set_page_config(page_title="Alpha Scanner Pro", layout="wide", page_icon="�
 # Note : Pour que cela marche, dans Google Sheets : 
 # Fichier > Partager > Publier sur le Web > Format CSV > Publier
 # Copie le lien généré ici :
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFe-_p54aZOkH3IhSR48qH-DI4-G2O6EODPv3607B7D6SGhuOsd9Yv7HJoBxfOvOofoWr8MZB9JJo1/pub?output=csv"
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFe-_p54aZOkH3IhSR48qH-DI4-G2O6EODPv3607B7D6SGhuOsd9Yv7HJoBxfOvOofoWr8MZB9JJo1/pubhtml"
 
 @st.cache_data # Pour éviter de recharger le fichier à chaque clic
 def load_data():
