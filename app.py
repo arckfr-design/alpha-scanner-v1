@@ -43,6 +43,7 @@ try:
         col2.metric("Win Rate", f"{(df['Alpha'] > 0).mean()*100:.1f}%")
         col3.metric("Signaux A+", len(df[df['Grade'].str.contains("A+", na=False)]))
 
+# --- SECTION PÉPITES A+ (Dans app.py) ---
 st.subheader("💎 Meilleures Sélections (Grade A+)")
 top_picks = df[df['Grade'].str.contains("A+", na=False)].sort_values('Score', ascending=False).head(5)
 
@@ -51,8 +52,14 @@ if not top_picks.empty:
     for i, (_, row) in enumerate(top_picks.iterrows()):
         with cols[i]:
             st.success(f"**{row['Ticker']}**")
-            st.write(f"PEG: **{row['PEG']}**")     
-            st.write(f"Score: **{row['Score']:.2f}**") 
+            st.write(f"PEG: **{row['PEG']}**")     # Retour du PEG ici
+            st.write(f"Score: **{row['Score']:.2f}**") # Score en bas
+else:
+    st.info("Aucune pépite A+ détectée aujourd'hui.")
+
+# --- LE TABLEAU (Rappel) ---
+# Le ROIC s'affichera automatiquement dans le dataframe à côté du ROE 
+# car il est chargé dans la fonction load_data().
 else:
     st.info("Aucune pépite A+ détectée aujourd'hui.")
 
