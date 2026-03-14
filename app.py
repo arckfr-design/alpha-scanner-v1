@@ -43,15 +43,18 @@ try:
         col2.metric("Win Rate", f"{(df['Alpha'] > 0).mean()*100:.1f}%")
         col3.metric("Signaux A+", len(df[df['Grade'].str.contains("A+", na=False)]))
 
-        st.subheader("💎 Meilleures Sélections (Grade A+)")
-        top_picks = df[df['Grade'].str.contains("A+", na=False)].sort_values('Date', ascending=False).head(5)
-        if not top_picks.empty:
-            cols = st.columns(len(top_picks))
-            for i, (_, row) in enumerate(top_picks.iterrows()):
-                with cols[i]:
-                    st.success(f"**{row['Ticker']}**")
-                    st.write(f"Score: {row['Score']:.2f}")
-                    st.write(f"ROIC: {row['ROIC']}%")
+st.subheader("💎 Meilleures Sélections (Grade A+)")
+top_picks = df[df['Grade'].str.contains("A+", na=False)].sort_values('Score', ascending=False).head(5)
+
+if not top_picks.empty:
+    cols = st.columns(len(top_picks))
+    for i, (_, row) in enumerate(top_picks.iterrows()):
+        with cols[i]:
+            st.success(f"**{row['Ticker']}**")
+            st.write(f"PEG: **{row['PEG']}**")     
+            st.write(f"Score: **{row['Score']:.2f}**") 
+else:
+    st.info("Aucune pépite A+ détectée aujourd'hui.")
 
         st.subheader("🔍 Base de Données Complète")
         st.dataframe(df.sort_values('Date', ascending=False), use_container_width=True)
