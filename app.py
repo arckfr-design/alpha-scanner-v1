@@ -12,14 +12,13 @@ def load_data():
     df = pd.read_csv(SHEET_CSV_URL)
     df.columns = df.columns.str.strip()
     
-    # Nettoyage des colonnes (Score, PEG, ROE, ROIC, Alpha, etc.)
+    # Nettoyage des colonnes numériques (incluant Secteur en texte)
     cols_num = ['Score', 'Alpha', 'PEG', 'ROE', 'ROIC', 'Perf. Stock', 'Perf. SPY', 'Prix Actuel']
     for col in cols_num:
         if col in df.columns:
             df[col] = df[col].astype(str).str.replace(',', '.').str.replace('%', '')
             df[col] = pd.to_numeric(df[col], errors='coerce')
     
-    # Filtre crucial
     df = df.dropna(subset=['Ticker', 'Alpha'])
     df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
     return df
@@ -27,79 +26,73 @@ def load_data():
 try:
     df = load_data()
 
-    # --- MENU LATERAL ---
-    st.sidebar.title("💎 Alpha Navigation")
-    menu = st.sidebar.radio("Navigation", ["🔍 Scanner Global", "📈 Historique Action", "💰 Performance Portefeuille"])
-    st.sidebar.info(f"Dernière MAJ : {df['Date'].max().strftime('%d/%m/%Y')}")
+    # --- FILTRE PAR SECTEUR (Barre latérale) ---
+    st.sidebar.title("🛡️ Alpha Navigation")
+    
+    secteurs_dispos = sorted(df['Secteur'].dropna().unique())
+    secteurs_selectionnes = st.sidebar.multiselect("Filtrer par Secteurs", secteurs_dispos, default=secteurs_dispos)
+    
+    menu = st.sidebar.radio("Menu", ["🔍 Scanner Global", "📈 Historique Action", "💰 Mon Portefeuille"])
+    
+    # Application du filtre
+    df_filtered = df[df['Secteur'].isin(secteurs_selectionnes)]
 
     # ==========================================
     # 1. SCANNER GLOBAL
     # ==========================================
     if menu == "🔍 Scanner Global":
-        st.title("🚀 Opportunités de Marché (GARP & Alpha)")
+        st.title("💎 Signaux & Opportunités")
         
+        # KPIs (sur les données filtrées)
         col1, col2, col3 = st.columns(3)
-        col1.metric("Alpha Moyen", f"{df['Alpha'].mean():.4f}")
-        col2.metric("Win Rate", f"{(df['Alpha'] > 0).mean()*100:.1f}%")
-        col3.metric("Signaux A+", len(df[df['Grade'].str.contains("A+", na=False)]))
+        col1.metric("Alpha Moyen", f"{df_filtered['Alpha'].mean():.4f}")
+        col2.metric("Actions Affichées", len(df_filtered['Ticker'].unique()))
+        col3.metric("Taux de Succès", f"{(df_filtered['Alpha'] > 0).mean()*100:.1f}%")
 
-# --- SECTION PÉPITES A+ (Dans app.py) ---
-st.subheader("💎 Meilleures Sélections (Grade A+)")
-top_picks = df[df['Grade'].str.contains("A+", na=False)].sort_values('Score', ascending=False).head(5)
+        # Meilleures Sélections A+
+        st.subheader("🚀 Top Signaux A+ (Filtrés)")
+        top_picks = df_filtered[df_filtered['Grade'].str.contains("A+", na=False)].sort_values('Score', ascending=False).head(5)
+        
+        if not top_picks.empty:
+            cols = st.columns(len(top_picks))
+            for i, (_, row) in enumerate(top_picks.iterrows()):
+                with cols[i]:
+                    st.success(f"**{row['Ticker']}**")
+                    st.write(f"PEG: **{row['PEG']}**")
+                    st.write(f"Score: **{row['Score']:.2f}**") # Score en bas
+        else:
+            st.info("Aucun signal A+ dans ces secteurs aujourd'hui.")
 
-if not top_picks.empty:
-    cols = st.columns(len(top_picks))
-    for i, (_, row) in enumerate(top_picks.iterrows()):
-        with cols[i]:
-            st.success(f"**{row['Ticker']}**")
-            st.write(f"PEG: **{row['PEG']}**")     # Retour du PEG ici
-            st.write(f"Score: **{row['Score']:.2f}**") # Score en bas
-else:
-    st.info("Aucune pépite A+ détectée aujourd'hui.")
-
-# --- LE TABLEAU (Rappel) ---
-# Le ROIC s'affichera automatiquement dans le dataframe à côté du ROE 
-# car il est chargé dans la fonction load_data().
-else:
-    st.info("Aucune pépite A+ détectée aujourd'hui.")
-
-        st.subheader("🔍 Base de Données Complète")
-        st.dataframe(df.sort_values('Date', ascending=False), use_container_width=True)
+        st.subheader("📋 Base de Données Complète")
+        st.dataframe(df_filtered.sort_values('Date', ascending=False), use_container_width=True)
 
     # ==========================================
-    # 2. HISTORIQUE ACTION (DEEP DIVE)
+    # 2. HISTORIQUE PAR ACTION
     # ==========================================
     elif menu == "📈 Historique Action":
-        st.title("🔍 Deep-Dive Historique")
-        ticker = st.selectbox("Choisir un Ticker", sorted(df['Ticker'].unique()))
-        sub_df = df[df['Ticker'] == ticker].sort_values('Date')
-
-        fig_score = px.line(sub_df, x='Date', y='Score', title=f"Evolution du Score : {ticker}", markers=True)
-        st.plotly_chart(fig_score, use_container_width=True)
-
-        c1, c2 = st.columns(2)
-        c1.plotly_chart(px.line(sub_df, x='Date', y='ROIC', title="ROIC (%)"), use_container_width=True)
-        c2.plotly_chart(px.line(sub_df, x='Date', y='PEG', title="PEG Ratio"), use_container_width=True)
-
-    # ==========================================
-    # 3. PERFORMANCE PORTEFEUILLE
-    # ==========================================
-    elif menu == "💰 Performance Portefeuille":
-        st.title("🏁 Notre Performance vs S&P 500")
+        st.title("🔍 Analyse Historique")
+        target = st.selectbox("Choisir une action :", sorted(df['Ticker'].unique()))
+        stock_df = df[df['Ticker'] == target].sort_values('Date')
         
-        # Comparaison Since Inception
-        df_perf = df.sort_values('Date').groupby('Date').agg({'Perf. Stock': 'mean', 'Perf. SPY': 'mean'}).reset_index()
-        df_perf['Portfolio'] = (1 + df_perf['Perf. Stock']).cumprod() * 100
-        df_perf['S&P 500'] = (1 + df_perf['Perf. SPY']).cumprod() * 100
+        st.plotly_chart(px.line(stock_df, x='Date', y='Score', title=f"Score : {target}"), use_container_width=True)
+        c1, c2 = st.columns(2)
+        c1.plotly_chart(px.line(stock_df, x='Date', y='ROIC', title="ROIC Evolution"), use_container_width=True)
+        c2.plotly_chart(px.line(stock_df, x='Date', y='PEG', title="PEG Evolution"), use_container_width=True)
 
-        fig_inception = px.line(df_perf, x='Date', y=['Portfolio', 'S&P 500'], 
-                                title="Croissance d'un capital de 100$",
-                                color_discrete_map={"Portfolio": "#00FF00", "S&P 500": "#FF4B4B"})
-        st.plotly_chart(fig_inception, use_container_width=True)
-
+    # ==========================================
+    # 3. MON PORTEFEUILLE
+    # ==========================================
+    elif menu == "💰 Mon Portefeuille":
+        st.title("🏆 Performance Portefeuille vs S&P 500")
         if 'Portfolio' in df.columns:
-            st.subheader("Positions Marquées 'OUI'")
-            st.dataframe(df[df['Portfolio'].astype(str).str.upper() == "OUI"], use_container_width=True)
+            my_stocks = df[df['Portfolio'].astype(str).str.upper() == "OUI"]
+            if not my_stocks.empty:
+                df_bench = df.sort_values('Date').groupby('Date').agg({'Perf. Stock': 'mean', 'Perf. SPY': 'mean'}).reset_index()
+                df_bench['Mon Portfolio'] = (1 + df_bench['Perf. Stock']).cumprod() * 100
+                df_bench['S&P 500'] = (1 + df_bench['Perf. SPY']).cumprod() * 100
+                st.plotly_chart(px.line(df_bench, x='Date', y=['Mon Portfolio', 'S&P 500'], title="Croissance vs Index"), use_container_width=True)
+                st.dataframe(my_stocks, use_container_width=True)
 
 except Exception as e:
-    st.error(f"Erreur : {e}")
+    st.error(f"Erreur de syntaxe ou de chargement : {e}")
+    st.info("Vérifiez que le bloc 'except' est bien présent à la fin du fichier.")
