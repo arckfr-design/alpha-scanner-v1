@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Alpha Scanner Pro", layout="wide", page_icon="🛡️")
+st.set_page_config(page_title="Next Pick", layout="wide", page_icon="🛡️")
 
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRFe-_p54aZOkH3IhSR48qH-DI4-G2O6EODPv3607B7D6SGhuOsd9Yv7HJoBxfOvOofoWr8MZB9JJo1/pub?output=csv"
 
