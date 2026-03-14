@@ -27,7 +27,7 @@ try:
     df = load_data()
 
     # --- FILTRE PAR SECTEUR (Barre latérale) ---
-    st.sidebar.title("🛡️ Alpha Navigation")
+    st.sidebar.title("🛡️ Next Pick Navigation")
     
     secteurs_dispos = sorted(df['Secteur'].dropna().unique())
     secteurs_selectionnes = st.sidebar.multiselect("Filtrer par Secteurs", secteurs_dispos, default=secteurs_dispos)
